@@ -1,6 +1,12 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Run Brain Hub (Desktop)" type="Application" factoryName="Application">
+    <option name="ALTERNATIVE_JRE_PATH" value="27" />
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+    <envs>
+      <env name="BRAINHUB_ADMIN_SETUP_CODE" value="Elton2026" />
+    </envs>
     <option name="MAIN_CLASS_NAME" value="com.brainhub.BrainHubApp" />
+    <module name="BRAINHUB" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

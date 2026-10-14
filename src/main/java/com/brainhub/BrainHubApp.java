@@ -23,6 +23,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
+import java.awt.Desktop;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.ZoneId;
@@ -30,10 +31,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
 public final class BrainHubApp extends Application {
-    private static final String NAVY = "#14213D";
-    private static final String BLUE = "#2563EB";
-    private static final String INK = "#172033";
-    private static final String MUTED = "#64748B";
+    private static final String NAVY = "#174A35";
+    private static final String GREEN = "#2E8B57";
+    private static final String ORANGE = "#F28C28";
+    private static final String POWDER_BLUE = "#B0E0E6";
+    private static final String INK = "#1F5138";
+    private static final String MUTED = "#527565";
     private static final String SURFACE = "#FFFFFF";
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm")
             .withZone(ZoneId.systemDefault());
@@ -57,7 +60,7 @@ public final class BrainHubApp extends Application {
         }
         Scene scene = new Scene(root, 1180, 780);
         scene.getStylesheets().clear();
-        root.setStyle("-fx-background-color: #F3F6FB; -fx-font-family: 'Segoe UI', Arial;");
+        root.setStyle("-fx-background-color: #F1F9F7; -fx-font-family: 'Segoe UI', Arial;");
         stage.setScene(scene);
         showSignIn("");
         stage.show();
@@ -78,7 +81,7 @@ public final class BrainHubApp extends Application {
 
         Label feedback = new Label(message.isBlank() ? startupDatabaseWarning : message);
         feedback.setWrapText(true);
-        feedback.setStyle("-fx-text-fill: " + (message.isBlank() ? "#B45309" : "#B91C1C") + ";");
+        feedback.setStyle("-fx-text-fill: " + ORANGE + ";");
 
         Button signIn = primaryButton("Sign in");
         signIn.setMaxWidth(Double.MAX_VALUE);
@@ -138,7 +141,7 @@ public final class BrainHubApp extends Application {
         styleField(setupCode);
         Label feedback = new Label();
         feedback.setWrapText(true);
-        feedback.setStyle("-fx-text-fill: #B91C1C;");
+        feedback.setStyle("-fx-text-fill: " + ORANGE + ";");
 
         VBox form = new VBox(12, title, details, fieldLabel("FULL NAME"), name,
                 fieldLabel("EMAIL"), email, fieldLabel("PASSWORD"), password);
@@ -210,7 +213,7 @@ public final class BrainHubApp extends Application {
         HBox header = new HBox(16);
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(16, 26, 16, 26));
-        header.setStyle("-fx-background-color: " + SURFACE + "; -fx-border-color: #E2E8F0; -fx-border-width: 0 0 1 0;");
+        header.setStyle("-fx-background-color: " + SURFACE + "; -fx-border-color: " + POWDER_BLUE + "; -fx-border-width: 0 0 1 0;");
         Label brand = new Label("BRAIN HUB");
         brand.setStyle("-fx-font-size: 19px; -fx-font-weight: 800; -fx-text-fill: " + NAVY + ";");
         Label account = new Label(activeUser.fullName() + "  ·  " + activeUser.role());
@@ -218,7 +221,7 @@ public final class BrainHubApp extends Application {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         Button logout = new Button("Log out");
-        logout.setStyle("-fx-background-color: #EEF2FF; -fx-text-fill: " + NAVY + "; -fx-font-weight: 700; -fx-padding: 9 16 9 16;");
+        logout.setStyle("-fx-background-color: " + POWDER_BLUE + "; -fx-text-fill: " + NAVY + "; -fx-font-weight: 700; -fx-padding: 9 16 9 16;");
         logout.setOnAction(event -> {
             activeUser = null;
             showSignIn("");
@@ -228,7 +231,7 @@ public final class BrainHubApp extends Application {
         VBox navigation = new VBox(8);
         navigation.setPadding(new Insets(24, 14, 24, 14));
         navigation.setPrefWidth(215);
-        navigation.setStyle("-fx-background-color: " + SURFACE + "; -fx-border-color: #E2E8F0; -fx-border-width: 0 1 0 0;");
+        navigation.setStyle("-fx-background-color: " + SURFACE + "; -fx-border-color: " + POWDER_BLUE + "; -fx-border-width: 0 1 0 0;");
         navigation.getChildren().addAll(
                 navButton("Dashboard", this::showDashboard),
                 navButton("Documents", this::showDocuments),
@@ -255,7 +258,15 @@ public final class BrainHubApp extends Application {
         TableView<DocumentService.DocumentRecord> table = new TableView<>();
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.setPrefHeight(330);
+        TextField keywordSearch = new TextField();
+        keywordSearch.setPromptText("Find by title, keyword, domain, abstract or co-author");
+        styleField(keywordSearch);
+        Button searchButton = secondaryButton("Search");
+        HBox searchBar = new HBox(9, keywordSearch, searchButton);
+        HBox.setHgrow(keywordSearch, Priority.ALWAYS);
         table.getColumns().add(stringColumn("TITLE", DocumentService.DocumentRecord::title));
+        table.getColumns().add(stringColumn("DOMAIN", DocumentService.DocumentRecord::researchDomain));
+        table.getColumns().add(stringColumn("KEYWORDS", DocumentService.DocumentRecord::keywords));
         if (activeUser.role() == User.Role.ADMIN) {
             table.getColumns().add(stringColumn("RESEARCHER", DocumentService.DocumentRecord::researcherName));
         }
@@ -272,6 +283,8 @@ public final class BrainHubApp extends Application {
         abstractView.setWrapText(true);
         abstractView.setPromptText("Document abstract");
         abstractView.setPrefRowCount(3);
+        Label metadata = text("");
+        metadata.setWrapText(true);
         HBox actions = new HBox(9);
         actions.setAlignment(Pos.CENTER_LEFT);
 
@@ -280,13 +293,21 @@ public final class BrainHubApp extends Application {
             if (selected == null) {
                 details.setText("Select a document to see its details and available actions.");
                 abstractView.clear();
+                metadata.setText("");
                 return;
             }
             details.setText(selected.title() + "  ·  " + selected.researcherName()
                     + "  ·  " + selected.researcherEmail() + "  ·  " + selected.status());
             abstractView.setText(selected.abstractText() == null || selected.abstractText().isBlank()
                     ? "No abstract provided." : selected.abstractText());
+            metadata.setText("Research domain: " + valueOrDash(selected.researchDomain())
+                    + "    Keywords: " + valueOrDash(selected.keywords())
+                    + "    Co-authors: " + valueOrDash(selected.coauthors()));
+            if (selected.status().equals("DRAFT") && activeUser.role() == User.Role.RESEARCHER) {
+                actions.getChildren().add(actionButton("Edit draft", () -> editDraft(selected)));
+            }
             if (activeUser.role() == User.Role.ADMIN) {
+                actions.getChildren().add(actionButton("Open paper", () -> openPaper(selected)));
                 if (selected.status().equals("SUBMITTED")) {
                     actions.getChildren().add(actionButton("Start review", () -> {
                         try {
@@ -312,19 +333,24 @@ public final class BrainHubApp extends Application {
                     }));
                 }
             }
-            if (activeUser.role() == User.Role.ADMIN
+            if (!selected.status().equals("DRAFT") && (activeUser.role() == User.Role.ADMIN
                     || selected.researcherId() == activeUser.id()
-                    || selected.status().equals("PUBLISHED")) {
+                    || selected.status().equals("PUBLISHED"))) {
                 actions.getChildren().add(actionButton("Download", () -> download(selected)));
             }
         });
 
-        try {
-            table.getItems().setAll(documentService.listDocuments(activeUser));
-        } catch (Exception exception) {
-            showInlineError(page, userMessage(exception));
-        }
-        page.getChildren().addAll(title, caption, table, details, abstractView, actions);
+        Runnable reload = () -> {
+            try {
+                table.getItems().setAll(documentService.listDocuments(activeUser, keywordSearch.getText()));
+            } catch (Exception exception) {
+                showInlineError(page, userMessage(exception));
+            }
+        };
+        searchButton.setOnAction(event -> reload.run());
+        keywordSearch.setOnAction(event -> reload.run());
+        reload.run();
+        page.getChildren().addAll(title, caption, searchBar, table, details, metadata, abstractView, actions);
         root.setCenter(page);
     }
 
@@ -333,22 +359,47 @@ public final class BrainHubApp extends Application {
             showDocuments();
             return;
         }
+        showDocumentEditor(null);
+    }
+
+    private void editDraft(DocumentService.DocumentRecord selected) {
+        try {
+            showDocumentEditor(documentService.getDraft(activeUser, selected.id()));
+        } catch (Exception exception) {
+            showError(exception);
+        }
+    }
+
+    private void showDocumentEditor(DocumentService.DocumentRecord draft) {
         showShell();
         VBox page = new VBox(14);
         page.setMaxWidth(760);
         page.setPadding(new Insets(30));
-        Label title = heading("Submit research");
-        Label instructions = text("Upload a document for review. The assigned admin will receive an in-app notification.");
+        Label title = heading(draft == null ? "Prepare research" : "Edit research draft");
+        Label instructions = text("Save your work as a draft at any time. Add co-authors, research domain and search keywords, then submit the completed paper for review.");
         instructions.setWrapText(true);
         TextField documentTitle = new TextField();
         documentTitle.setPromptText("Research title");
+        if (draft != null) documentTitle.setText(draft.title());
         styleField(documentTitle);
         TextArea abstractText = new TextArea();
         abstractText.setPromptText("Abstract (optional)");
+        if (draft != null) abstractText.setText(draft.abstractText());
         abstractText.setWrapText(true);
         abstractText.setPrefRowCount(5);
+        TextField coauthors = new TextField(draft == null ? "" : nullToEmpty(draft.coauthors()));
+        coauthors.setPromptText("Co-author names, separated by commas");
+        TextField researchDomain = new TextField(draft == null ? "" : nullToEmpty(draft.researchDomain()));
+        researchDomain.setPromptText("e.g. Public health, computer science");
+        TextField keywords = new TextField(draft == null ? "" : nullToEmpty(draft.keywords()));
+        keywords.setPromptText("Keywords separated by commas");
+        styleField(coauthors);
+        styleField(researchDomain);
+        styleField(keywords);
         TextField filePath = new TextField();
-        filePath.setPromptText("Choose a document file");
+        filePath.setPromptText(draft != null && draft.originalFileName() != null
+                ? "Current file: " + draft.originalFileName() + " (choose another to replace)"
+                : "Choose a paper file now or save as a draft without one");
         filePath.setEditable(false);
         styleField(filePath);
         Button chooseFile = secondaryButton("Browse");
@@ -364,28 +415,44 @@ public final class BrainHubApp extends Application {
         HBox.setHgrow(filePath, Priority.ALWAYS);
         Label feedback = new Label();
         feedback.setWrapText(true);
+        long[] draftId = {draft == null ? 0 : draft.id()};
+        Button saveDraft = secondaryButton("Save draft");
+        saveDraft.setOnAction(event -> saveResearchDocument(false, draftId, documentTitle, abstractText,
+                coauthors, researchDomain, keywords, filePath, feedback));
         Button submit = primaryButton("Submit for review");
-        submit.setOnAction(event -> {
-            try {
-                if (filePath.getText().isBlank()) {
-                    throw new IllegalArgumentException("Choose the document file to submit.");
-                }
-                documentService.submitDocument(activeUser, documentTitle.getText(), abstractText.getText(),
-                        Path.of(filePath.getText()));
-                showAlert(Alert.AlertType.INFORMATION, "Submission received",
-                        "Your document was submitted. You can follow its status in Documents and Notifications.");
-                showDocuments();
-            } catch (Exception exception) {
-                feedback.setText(userMessage(exception));
-                feedback.setStyle("-fx-text-fill: #B91C1C;");
-            }
-        });
+        submit.setOnAction(event -> saveResearchDocument(true, draftId, documentTitle, abstractText,
+                coauthors, researchDomain, keywords, filePath, feedback));
+        HBox editorActions = new HBox(10, saveDraft, submit);
         VBox card = new VBox(13, title, instructions, fieldLabel("TITLE"), documentTitle,
-                fieldLabel("ABSTRACT"), abstractText, fieldLabel("DOCUMENT FILE"), filePicker, feedback, submit);
+                fieldLabel("ABSTRACT"), abstractText, fieldLabel("CO-AUTHORS"), coauthors,
+                fieldLabel("RESEARCH DOMAIN"), researchDomain, fieldLabel("KEYWORDS"), keywords,
+                fieldLabel("PAPER FILE"), filePicker, feedback, editorActions);
         card.setPadding(new Insets(26));
         card.setStyle(cardStyle());
         page.getChildren().add(card);
         root.setCenter(page);
+    }
+
+    private void saveResearchDocument(boolean submit, long[] draftId, TextField documentTitle,
+                                      TextArea abstractText, TextField coauthors, TextField researchDomain,
+                                      TextField keywords, TextField filePath, Label feedback) {
+        try {
+            Path selectedFile = filePath.getText().isBlank() ? null : Path.of(filePath.getText());
+            draftId[0] = documentService.saveDocument(activeUser, draftId[0], documentTitle.getText(),
+                    abstractText.getText(), coauthors.getText(), researchDomain.getText(), keywords.getText(),
+                    selectedFile, submit);
+            if (submit) {
+                showAlert(Alert.AlertType.INFORMATION, "Submission received",
+                        "Your paper was submitted. The assigned admin will be notified.");
+                showDocuments();
+            } else {
+                feedback.setText("Draft saved. You can return to Documents and edit it later.");
+                feedback.setStyle("-fx-text-fill: " + GREEN + ";");
+            }
+        } catch (Exception exception) {
+            feedback.setText(userMessage(exception));
+            feedback.setStyle("-fx-text-fill: " + ORANGE + ";");
+        }
     }
 
     private void showNotifications() {
@@ -408,7 +475,7 @@ public final class BrainHubApp extends Application {
                 meta.setStyle("-fx-font-size: 11px; -fx-text-fill: " + MUTED + ";");
                 VBox note = new VBox(7, message, meta);
                 note.setPadding(new Insets(16));
-                note.setStyle(cardStyle() + (notification.read() ? "" : "-fx-border-color: #93C5FD;"));
+                note.setStyle(cardStyle() + (notification.read() ? "" : "-fx-border-color: " + ORANGE + ";"));
                 if (!notification.read()) {
                     Button markRead = linkButton("Mark as read");
                     markRead.setOnAction(event -> {
@@ -463,6 +530,25 @@ public final class BrainHubApp extends Application {
         }
     }
 
+    private void openPaper(DocumentService.DocumentRecord document) {
+        try {
+            if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                throw new IllegalStateException("This computer cannot open files using a desktop application.");
+            }
+            Desktop.getDesktop().open(documentService.getPaperPath(activeUser, document.id()).toFile());
+        } catch (Exception exception) {
+            showError(exception);
+        }
+    }
+
+    private String valueOrDash(String value) {
+        return value == null || value.isBlank() ? "—" : value;
+    }
+
+    private String nullToEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
     private TableColumn<DocumentService.DocumentRecord, String> stringColumn(
             String title, java.util.function.Function<DocumentService.DocumentRecord, String> value) {
         TableColumn<DocumentService.DocumentRecord, String> column = new TableColumn<>(title);
@@ -474,7 +560,7 @@ public final class BrainHubApp extends Application {
         Label number = new Label(Integer.toString(value));
         number.setStyle("-fx-font-size: 30px; -fx-font-weight: 800; -fx-text-fill: " + NAVY + ";");
         Label caption = new Label(title);
-        caption.setStyle("-fx-font-size: 11px; -fx-font-weight: 800; -fx-text-fill: " + BLUE + ";");
+        caption.setStyle("-fx-font-size: 11px; -fx-font-weight: 800; -fx-text-fill: " + GREEN + ";");
         Label hint = new Label(description);
         hint.setStyle("-fx-font-size: 12px; -fx-text-fill: " + MUTED + ";");
         VBox card = new VBox(8, caption, number, hint);
@@ -496,14 +582,14 @@ public final class BrainHubApp extends Application {
 
     private Button primaryButton(String label) {
         Button button = new Button(label);
-        button.setStyle("-fx-background-color: " + BLUE + "; -fx-text-fill: white; -fx-font-weight: 700;"
+        button.setStyle("-fx-background-color: " + GREEN + "; -fx-text-fill: white; -fx-font-weight: 700;"
                 + " -fx-background-radius: 8; -fx-padding: 11 18 11 18; -fx-cursor: hand;");
         return button;
     }
 
     private Button secondaryButton(String label) {
         Button button = new Button(label);
-        button.setStyle("-fx-background-color: #E8EEFC; -fx-text-fill: " + NAVY
+        button.setStyle("-fx-background-color: " + POWDER_BLUE + "; -fx-text-fill: " + NAVY
                 + "; -fx-font-weight: 700; -fx-padding: 10 15 10 15; -fx-cursor: hand;");
         return button;
     }
@@ -516,7 +602,7 @@ public final class BrainHubApp extends Application {
 
     private Button linkButton(String label) {
         Button button = new Button(label);
-        button.setStyle("-fx-background-color: transparent; -fx-text-fill: " + BLUE
+        button.setStyle("-fx-background-color: transparent; -fx-text-fill: " + ORANGE
                 + "; -fx-font-weight: 700; -fx-underline: true; -fx-cursor: hand;");
         return button;
     }
@@ -542,19 +628,19 @@ public final class BrainHubApp extends Application {
     }
 
     private void styleField(TextField field) {
-        field.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: #DCE3ED; -fx-border-radius: 7;"
+        field.setStyle("-fx-background-color: #F1F9F7; -fx-border-color: " + POWDER_BLUE + "; -fx-border-radius: 7;"
                 + " -fx-background-radius: 7; -fx-padding: 11 12 11 12;");
     }
 
     private String cardStyle() {
         return "-fx-background-color: " + SURFACE + "; -fx-background-radius: 12;"
-                + " -fx-border-color: #E2E8F0; -fx-border-radius: 12;";
+            + " -fx-border-color: " + POWDER_BLUE + "; -fx-border-radius: 12;";
     }
 
     private void showInlineError(VBox parent, String message) {
         Label error = new Label(message);
         error.setWrapText(true);
-        error.setStyle("-fx-text-fill: #B91C1C;");
+        error.setStyle("-fx-text-fill: " + ORANGE + ";");
         parent.getChildren().add(error);
     }
 
