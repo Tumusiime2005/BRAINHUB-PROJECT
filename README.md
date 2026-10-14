@@ -67,3 +67,4 @@ Uploaded files are stored locally under the current Windows user's `.brainhub/do
 6. **Typical review/publication flow:** the assigned admin opens the stored paper with the operating system's associated reader, starts review, approves or rejects with optional comments, and can publish an approved paper. Each status transition and its account-specific notification is written through JDBC. Researchers can see their notifications and download their own work or published papers while signed in.
 
 The interface uses powder blue, green, and orange as its color palette. File opening depends on the user's computer having an application associated with the submitted file type.
+This project is now complete and can be used, ready for collaborations, and updates.
