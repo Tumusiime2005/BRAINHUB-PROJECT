@@ -186,7 +186,8 @@ public final class DocumentService {
                     throw new IllegalStateException("Only submitted documents can be moved under review.");
                 }
                 try (PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE documents SET status = 'UNDER_REVIEW' WHERE document_id = ?")) {
+                        "UPDATE documents SET status = 'UNDER_REVIEW', updated_at = CURRENT_TIMESTAMP "
+                            + "WHERE document_id = ?")) {
                     statement.setLong(1, documentId);
                     statement.executeUpdate();
                 }
@@ -211,7 +212,7 @@ public final class DocumentService {
                 }
                 String decision = approved ? "APPROVED" : "REJECTED";
                 try (PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE documents SET status = ? WHERE document_id = ?")) {
+                        "UPDATE documents SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE document_id = ?")) {
                     statement.setString(1, decision);
                     statement.setLong(2, documentId);
                     statement.executeUpdate();
@@ -249,7 +250,8 @@ public final class DocumentService {
                     throw new IllegalStateException("Only approved documents can be published.");
                 }
                 try (PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE documents SET status = 'PUBLISHED', published_at = CURRENT_TIMESTAMP "
+                        "UPDATE documents SET status = 'PUBLISHED', published_at = CURRENT_TIMESTAMP, "
+                            + "updated_at = CURRENT_TIMESTAMP "
                                 + "WHERE document_id = ?")) {
                     statement.setLong(1, documentId);
                     statement.executeUpdate();

@@ -66,6 +66,9 @@ public final class AuthService {
         if (cleanedEmail.isBlank() || !cleanedEmail.contains("@")) {
             throw new IllegalArgumentException("Enter a valid email address.");
         }
+        if (cleanedEmail.length() > 191) {
+            throw new IllegalArgumentException("Email addresses must be 191 characters or fewer.");
+        }
         if (password == null || password.length() < 8) {
             throw new IllegalArgumentException("Use a password with at least 8 characters.");
         }

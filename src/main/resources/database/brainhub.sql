@@ -1,6 +1,7 @@
 -- BRAIN HUB research publication management database
--- Target: MySQL 8.0+ (also suitable for current MariaDB releases)
--- Run this script in MySQL Workbench or the MySQL command-line client.
+-- Target: WampServer MySQL/MariaDB, including older MySQL versions that allow
+-- only one automatically initialized TIMESTAMP column in each table.
+-- Run this script in phpMyAdmin or the MySQL command-line client.
 
 CREATE DATABASE IF NOT EXISTS brain_hub
     CHARACTER SET utf8mb4
@@ -13,12 +14,13 @@ USE brain_hub;
 CREATE TABLE IF NOT EXISTS users (
     user_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     full_name VARCHAR(150) NOT NULL,
-    email VARCHAR(254) NOT NULL,
+    -- 191 characters keeps the unique utf8mb4 index within MySQL's older 767-byte limit.
+    email VARCHAR(191) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     role ENUM('RESEARCHER', 'ADMIN') NOT NULL DEFAULT 'RESEARCHER',
     account_status ENUM('ACTIVE', 'DISABLED') NOT NULL DEFAULT 'ACTIVE',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL,
     PRIMARY KEY (user_id),
     UNIQUE KEY uq_users_email (email),
     KEY idx_users_role_status (role, account_status)
@@ -45,7 +47,7 @@ CREATE TABLE IF NOT EXISTS documents (
     submitted_at DATETIME NULL,
     published_at DATETIME NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL,
     PRIMARY KEY (document_id),
     KEY idx_documents_researcher_status (researcher_id, status),
     KEY idx_documents_status_submitted (status, submitted_at),
