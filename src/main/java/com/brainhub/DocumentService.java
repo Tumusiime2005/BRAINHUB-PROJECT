@@ -484,7 +484,7 @@ public final class DocumentService {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    public Path getPaperPath(User user, long documentId) throws SQLException {
+    public Path getPaperPath(User user, long documentId) throws SQLException, IOException {
         String sql = "SELECT researcher_id, assigned_admin_id, status, storage_path FROM documents WHERE document_id = ?";
         try (Connection connection = Database.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
