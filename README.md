@@ -1,6 +1,6 @@
 # BRAIN HUB
 
-BRAIN HUB is a JavaFX desktop application. WampServer provides the local MySQL/MariaDB database; Apache and PHP are not used by the desktop app.
+BRAIN HUB is a JavaFX desktop application. WampServer provides the local MySQL database; Apache and PHP are not used by the desktop app.
 
 ## Requirements
 
